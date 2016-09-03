@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         mScoreBar = (KScoreBar) findViewById(R.id.custom_scorebar);
-        mScoreBar.setScoreAnimatorListener(this);
+        mScoreBar.setProgressAnimatorListener(this);
 
         mButton = (Button) findViewById(R.id.btn_show);
         mButton.setOnClickListener(this);
@@ -30,7 +30,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
-        mScoreBar.setProgressWithAnim(16, 30, 50, true, 1000);
+        mScoreBar.addLeftProgressWithAnim(true, 10,20,25,30);
+        mScoreBar.addRightProgressWitAnim(true,0,8,13,45);
+        mScoreBar.showWithAnim(10000);
     }
 
     @Override

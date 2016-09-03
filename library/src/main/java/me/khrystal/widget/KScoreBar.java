@@ -40,6 +40,9 @@ public class KScoreBar extends View {
     private static final int DEFAULT_WIDTH         = 200;
     private static final int DEFAULT_HEIGHT        = 50;
     private static final int PROGRESS              = 5;
+    private Collection<Animator> mAnimList;
+    private ValueAnimator leftAnim;
+    private ValueAnimator rightAnim;
 
 
     public KScoreBar(Context context) {
@@ -78,6 +81,7 @@ public class KScoreBar extends View {
         mTextPaint = new Paint();
         mBarPaint.setAntiAlias(true);
         mTextPaint.setAntiAlias(true);
+        mAnimList = new ArrayList<>();
     }
 
     @Override
@@ -154,30 +158,9 @@ public class KScoreBar extends View {
         invalidate();
     }
 
-    /**
-     * show with anim progress
-     * @param startLeftProgress start leftprogress
-     * @param endLeftProgress end leftprogress
-     * @param allProgress the left + right progress
-     * @param showOnText if showOnText == true the progress number will instead left and right text
-     * @param duration anim duration
-     */
-    public void setProgressWithAnim(int startLeftProgress, int endLeftProgress, int allProgress, final boolean showOnText, int duration) {
 
-        Collection<Animator> animList = new ArrayList<>();
-
-        ValueAnimator leftAnim = ValueAnimator.ofInt(startLeftProgress, endLeftProgress);
-        leftAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                mProgressLeft = (int) animation.getAnimatedValue();
-                if (showOnText)
-                    mTextLeft = String.valueOf(mProgressLeft);
-            }
-        });
-        animList.add(leftAnim);
-
-        ValueAnimator rightAnim = ValueAnimator.ofInt(allProgress - startLeftProgress,  allProgress - endLeftProgress);
+    public void addRightProgressWitAnim(final boolean showOnText, int...rightProgress) {
+        rightAnim = ValueAnimator.ofInt(rightProgress);
         rightAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -187,11 +170,32 @@ public class KScoreBar extends View {
                 invalidate();
             }
         });
-        animList.add(rightAnim);
+    }
 
+    public void addLeftProgressWithAnim(final boolean showOnText, int...leftProgress) {
+        leftAnim = ValueAnimator.ofInt(leftProgress);
+        leftAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                mProgressLeft = (int) animation.getAnimatedValue();
+                if (showOnText)
+                    mTextLeft = String.valueOf(mProgressLeft);
+            }
+        });
+    }
+
+
+    /**
+     * show with anim progress
+     * @param duration anim duration
+     */
+    public void showWithAnim(long duration) {
+        mAnimList.clear();
+        mAnimList.add(leftAnim);
+        mAnimList.add(rightAnim);
         AnimatorSet animationSet = new AnimatorSet();
         animationSet.setDuration(duration);
-        animationSet.playTogether(animList);
+        animationSet.playTogether(mAnimList);
         animationSet.setInterpolator(new LinearInterpolator());
 
         if (mAnimatorListener != null)
@@ -200,7 +204,7 @@ public class KScoreBar extends View {
         animationSet.start();
     }
 
-    public void setScoreAnimatorListener(Animator.AnimatorListener animatorListener) {
+    public void setProgressAnimatorListener(Animator.AnimatorListener animatorListener) {
         mAnimatorListener = animatorListener;
     }
 
