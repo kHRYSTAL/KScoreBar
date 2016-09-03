@@ -12,7 +12,6 @@ import android.graphics.Paint;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
@@ -198,8 +197,27 @@ public class KScoreBar extends View {
         animationSet.playTogether(mAnimList);
         animationSet.setInterpolator(new LinearInterpolator());
 
-        if (mAnimatorListener != null)
-            animationSet.addListener(mAnimatorListener);
+        animationSet.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+
+            }
+        });
 
         animationSet.start();
     }
@@ -284,6 +302,5 @@ public class KScoreBar extends View {
         final float scale = getContext().getResources().getDisplayMetrics().density;
         return (int) (dpValue * scale + 0.5f);
     }
-
 
 }

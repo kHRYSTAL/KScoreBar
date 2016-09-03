@@ -5,6 +5,7 @@ also can show with anim
 
 ##### screenshot
 
+![](https://github.com/kHRYSTAL/KScoreBar/blob/master/art/screenshot.gif)
 
 ##### custom attributes
 
