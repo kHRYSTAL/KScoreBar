@@ -1,5 +1,8 @@
 package me.khrystal.widget;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -7,8 +10,14 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
+
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * usage:
@@ -25,6 +34,7 @@ public class KScoreBar extends View {
     private String mTextLeft, mTextRight;
     private Paint mBarPaint, mTextPaint;
     private int mWidth, mHeight;
+    private Animator.AnimatorListener mAnimatorListener;
 
     private static final int DEGREE                = 10;
     private static final int DEFAULT_WIDTH         = 200;
@@ -53,40 +63,145 @@ public class KScoreBar extends View {
 
     private void init(Context context, AttributeSet attrs) {
         mContext = context;
+
         TypedArray ta = getContext().obtainStyledAttributes(attrs, R.styleable.KScoreBar);
         mColorLeft = ta.getColor(R.styleable.KScoreBar_leftColor, Color.GREEN);
         mColorRight = ta.getColor(R.styleable.KScoreBar_rightColor, Color.RED);
         mTextLeft = ta.getString(R.styleable.KScoreBar_leftText);
         mTextRight = ta.getString(R.styleable.KScoreBar_rightText);
-        mTextColor = ta.getColor(R.styleable.KScoreBar_textColor, Color.WHITE);
+        mTextColor = ta.getColor(R.styleable.KScoreBar_textColor, Color.BLACK);
         mProgressLeft = ta.getInteger(R.styleable.KScoreBar_leftProgress, PROGRESS);
         mProgressRight = ta.getInteger(R.styleable.KScoreBar_rightProgress, PROGRESS);
-
         ta.recycle();
 
         mBarPaint = new Paint();
         mTextPaint = new Paint();
         mBarPaint.setAntiAlias(true);
         mTextPaint.setAntiAlias(true);
-
-        mTextPaint.setTextSize(Math.min(mWidth / DEGREE, mHeight) /2);
-        mTextPaint.setColor(mTextColor);
-        mTextPaint.setTextAlign(Paint.Align.CENTER);
-
-        mBarPaint.setStyle(Paint.Style.STROKE);
-        mBarPaint.setStrokeWidth(mHeight / 10);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
         Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
         float textBaseLineOffset = (fontMetrics.bottom - fontMetrics.top) / 2
                 - fontMetrics.bottom;
+        if (TextUtils.isEmpty(mTextLeft)) mTextLeft = String.valueOf(mProgressLeft);
         canvas.drawText(mTextLeft, mWidth / DEGREE / 2, mHeight / 2 + textBaseLineOffset, mTextPaint);
-        mBarPaint.setColor(mColorLeft);
 
+        mBarPaint.setColor(mColorLeft);
+        canvas.drawLine(mWidth / DEGREE,
+                mHeight / 2,
+                mWidth / DEGREE + mWidth * (DEGREE - 2) / DEGREE * mProgressLeft / (mProgressLeft + mProgressRight),
+                mHeight / 2,
+                mBarPaint);
+
+        fontMetrics = mTextPaint.getFontMetrics();
+        textBaseLineOffset = (fontMetrics.bottom - fontMetrics.top) / 2 - fontMetrics.bottom;
+        if (TextUtils.isEmpty(mTextRight)) mTextRight = String.valueOf(mProgressRight);
+        canvas.drawText(mTextRight, mWidth - mWidth / DEGREE / 2, mHeight / 2 + textBaseLineOffset,mTextPaint);
+
+        mBarPaint.setColor(mColorRight);
+        canvas.drawLine(mWidth/ DEGREE + mWidth * (DEGREE -2)/ DEGREE * mProgressLeft /(mProgressLeft + mProgressRight),
+                mHeight / 2,
+                mWidth * (DEGREE -1) / DEGREE,
+                mHeight/2,
+                mBarPaint);
+    }
+
+    /**
+     * set left and right progress
+     * the left display is left/(left+right)
+     * the right display is 1 - left display
+     * @param leftProgress
+     * @param rightProgress
+     */
+    public void setProgress(int leftProgress, int rightProgress) {
+        mProgressLeft = leftProgress;
+        mProgressRight = rightProgress;
+        invalidate();
+    }
+
+    /**
+     * set left and right textColor
+     * @param textColor
+     */
+    public void setTextColor(int textColor) {
+        mTextColor = textColor;
+        invalidate();
+    }
+
+    /**
+     * set left and right progressColor
+     * @param colorLeft
+     * @param colorRight
+     */
+    public void setProgressColor(int colorLeft, int colorRight) {
+        mColorLeft = colorLeft;
+        mColorRight = colorRight;
+        invalidate();
+    }
+
+    /**
+     * set left and right Text
+     * if text is null or "" the progress will instead them
+     * @param textLeft
+     * @param textRight
+     */
+    public void setLeftAndRightText(String textLeft, String textRight) {
+        mTextLeft = textLeft;
+        mTextRight = textRight;
+        invalidate();
+    }
+
+    /**
+     * show with anim progress
+     * @param startLeftProgress start leftprogress
+     * @param endLeftProgress end leftprogress
+     * @param allProgress the left + right progress
+     * @param showOnText if showOnText == true the progress number will instead left and right text
+     * @param duration anim duration
+     */
+    public void setProgressWithAnim(int startLeftProgress, int endLeftProgress, int allProgress, final boolean showOnText, int duration) {
+
+        Collection<Animator> animList = new ArrayList<>();
+
+        ValueAnimator leftAnim = ValueAnimator.ofInt(startLeftProgress, endLeftProgress);
+        leftAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                mProgressLeft = (int) animation.getAnimatedValue();
+                if (showOnText)
+                    mTextLeft = String.valueOf(mProgressLeft);
+            }
+        });
+        animList.add(leftAnim);
+
+        ValueAnimator rightAnim = ValueAnimator.ofInt(allProgress - startLeftProgress,  allProgress - endLeftProgress);
+        rightAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                mProgressRight = (int) animation.getAnimatedValue();
+                if (showOnText)
+                    mTextRight = String.valueOf(mProgressRight);
+                invalidate();
+            }
+        });
+        animList.add(rightAnim);
+
+        AnimatorSet animationSet = new AnimatorSet();
+        animationSet.setDuration(duration);
+        animationSet.playTogether(animList);
+        animationSet.setInterpolator(new LinearInterpolator());
+
+        if (mAnimatorListener != null)
+            animationSet.addListener(mAnimatorListener);
+
+        animationSet.start();
+    }
+
+    public void setScoreAnimatorListener(Animator.AnimatorListener animatorListener) {
+        mAnimatorListener = animatorListener;
     }
 
     @Override
@@ -99,6 +214,13 @@ public class KScoreBar extends View {
 
         mWidth = getWidth() - paddingLeft - paddingRight;
         mHeight = getHeight() - paddingTop - paddingBottom;
+
+        mTextPaint.setTextSize(Math.min(mWidth / DEGREE, mHeight) /2);
+        mTextPaint.setColor(mTextColor);
+        mTextPaint.setTextAlign(Paint.Align.CENTER);
+
+        mBarPaint.setStyle(Paint.Style.STROKE);
+        mBarPaint.setStrokeWidth(mHeight / 10);
     }
 
 
@@ -158,5 +280,6 @@ public class KScoreBar extends View {
         final float scale = getContext().getResources().getDisplayMetrics().density;
         return (int) (dpValue * scale + 0.5f);
     }
+
 
 }
